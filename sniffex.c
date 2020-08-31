@@ -560,6 +560,14 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	// Creating custom filters for testing purposes
+	/*fprintf("Applying destination filter for ports 10-100");
+	char* filter_exp[] = "(dst port 10-100)";  */
+
+	/*fprinft("Applying ICMP filter for hosts ____ and ____");
+	char* filter_exp[]= "(ip proto icmp) and (((dst host ___) and (src host ____)) or ((dst host ___) and (src host ____))";    */
+
+
 	/* compile the filter expression */
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
 		fprintf(stderr, "Couldn't parse filter %s: %s\n",

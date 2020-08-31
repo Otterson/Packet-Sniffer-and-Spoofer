@@ -1,0 +1,13 @@
+Austin Peterson
+UIN: 926006358
+
+Starter Sniffex Questions.
+
+1. Use your own words to describe the sequence of library calls that are essential to sniffer programs 
+	-The first essential step is establishing the device that is to be used to sniff, which can be found by either manually entering the device name or by using the call pcap_lookup(char* errbuff). The next step is to initialize the sniffing session using the call pcap_openlive(...), which takes arguments for the sniff device, length, promiscuity, timeout and error buffer. Next, if you dont want to sniff every packet on the network, you have to create a filter using pcap_compile(...) which creates a compiled bpf_program filter based on a string for the filter expression, and pcap_setfilter() which simply enforces the filter. After that, you can use functions like pcap_next, pcap_loop and pcap_dispatch to process each packet, which can can be done using callback functions.
+
+2. Why do you need the root privilege to run sniffex? Where does the program fail if executed without the root privilege?
+	-you need root privileges to run sniffex because you're using the raw sockets to intercept traffic. If you dont have root privilege then you fail when you try to call the pcap_openlive command to start the sniffing session.
+
+3. Turn on and off promiscuous mode. Can you demonstrate the difference? Please describe.
+	-Promiscuous mode will determine whether you capture packets just going to your device (prom=0) or if you sniff all traffic on the network (prom=1). With promiscuous mode enabled, the packet sniffer should pick up a much larger number of packets since its not just looking for packets intended for that machine. The only downside is that promiscuous mode will not work in a switched environment, since routing of network packets is determined in that central hub and not packets are not delivered to every machine connected to the switch
