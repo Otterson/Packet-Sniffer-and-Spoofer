@@ -91,7 +91,7 @@ struct ip_header* ip = (struct ip_header*)buffer;
 
 struct tcp_header* tcp = (struct tcp_header*)buffer + sizeof(ip);
 
-ip->ip_len = 1024;
+ip->ip_len = 420;
 ip->ip_p = "tcp";
 tcp->th_sport = 80;
 tcp->th_dport = 80;
