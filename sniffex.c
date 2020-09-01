@@ -507,7 +507,7 @@ int main(int argc, char **argv)
 	char errbuf[PCAP_ERRBUF_SIZE];		/* error buffer */
 	pcap_t *handle;				/* packet capture handle */
 
-	char filter_exp[] = "ip";		/* filter expression [3] */
+	//char filter_exp[] = "ip";		/* filter expression [3] */
 	struct bpf_program fp;			/* compiled filter program (expression) */
 	bpf_u_int32 mask;			/* subnet mask */
 	bpf_u_int32 net;			/* ip */
@@ -541,6 +541,16 @@ int main(int argc, char **argv)
 		net = 0;
 		mask = 0;
 	}
+	// Creating custom filters for testing purposes
+	/*printf("Applying destination filter for ports 10-100\n");
+	char filter_exp[] = "(dst portrange 10-100)";  */
+
+	/*printf("Applying ICMP filter for hosts 10.0.2.4 and 10.0.2.5\n");
+	char filter_exp[]= "((icmp) and ((dst host 10.0.2.5) and (src host 10.0.2.4)) or ((dst host 10.0.2.4) and (src host 10.0.2.5)))"; */   
+	
+	printf("Applying telnet capture filter");
+	char filter_exp[] = "dst port 23";
+
 
 	/* print capture info */
 	printf("Device: %s\n", dev);
@@ -560,13 +570,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// Creating custom filters for testing purposes
-	/*fprintf("Applying destination filter for ports 10-100");
-	char* filter_exp[] = "(dst port 10-100)";  */
-
-	/*fprinft("Applying ICMP filter for hosts ____ and ____");
-	char* filter_exp[]= "(ip proto icmp) and (((dst host ___) and (src host ____)) or ((dst host ___) and (src host ____))";    */
-
+	
 
 	/* compile the filter expression */
 	if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {

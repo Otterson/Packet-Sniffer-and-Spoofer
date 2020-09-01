@@ -10,11 +10,11 @@ PACKET SNIFFER QUESTIONS:
 	-you need root privileges to run sniffex because you're using the raw sockets to intercept traffic. If you dont have root privilege then you fail when you try to call the pcap_openlive command to start the sniffing session.
 
 3. Turn on and off promiscuous mode. Can you demonstrate the difference? Please describe.
-	-Promiscuous mode will determine whether you capture packets just going to your device (prom=0) or if you sniff all traffic on the network (prom=1). With promiscuous mode enabled, the packet sniffer should pick up a much larger number of packets since its not just looking for packets intended for that machine. The only downside is that promiscuous mode will not work in a switched environment, since routing of network packets is determined in that central hub and not packets are not delivered to every machine connected to the switch
+	-Promiscuous mode will determine whether you capture packets just going to your device (prom=0) or if you sniff all traffic on the network (prom=1). With promiscuous mode enabled, the packet sniffer picks up packets that are being send not only to the vm hosting the sniffer but also any other machines (vms in this case) that are connected to the network.
 
 4. Please write filter expressions to capture each of the followings. In your lab reports, you need to include screendumps to show the results of applying each of these filters.
-	-ICMP filter expression: char* filter_exp[]= "(ip proto icmp) and (((dst host ___) and (src host ____)) or ((dst host ___) and (src host ____))";
-	-TCP filter expression: char* filter_exp[] = "(dst port 10-100)";
+	-ICMP filter expression: char* filter_exp[]= "((icmp) and ((dst host 10.0.2.5) and (src host 10.0.2.4)) or ((dst host 10.0.2.4) and (src host 10.0.2.5)))"; 
+	-TCP port filter expression: char* filter_exp[] = "(dst portrange 10-100)";
 	
 5. Show how you can use sniffex to capture passwords when somebody is using telnet on the network that you are monitoring.
 	-
