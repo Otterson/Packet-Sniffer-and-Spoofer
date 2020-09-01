@@ -18,6 +18,8 @@ UIN: 926006358
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h> 
+#include <netinet/ip_icmp.h>
+//#include <ip_icmp.h>
 
 
 //IP Header
@@ -34,36 +36,13 @@ struct ip_header {
         u_char  ip_ttl;                 /* time to live */
         u_char  ip_p;                   /* protocol */
         u_short ip_sum;                 /* checksum */
-        struct  in_addr ip_src,ip_dst;  /* source and dest address */
+        int ip_src,ip_dst;  /* source and dest address */
 };
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
 
 // TCP header 
-typedef u_int tcp_seq;
-
-struct tcp_header {
-        u_short th_sport;               /* source port */
-        u_short th_dport;               /* destination port */
-        tcp_seq th_seq;                 /* sequence number */
-        tcp_seq th_ack;                 /* acknowledgement number */
-        u_char  th_offx2;               /* data offset, rsvd */
-#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
-        u_char  th_flags;
-        #define TH_FIN  0x01
-        #define TH_SYN  0x02
-        #define TH_RST  0x04
-        #define TH_PUSH 0x08
-        #define TH_ACK  0x10
-        #define TH_URG  0x20
-        #define TH_ECE  0x40
-        #define TH_CWR  0x80
-        #define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-        u_short th_win;                 /* window */
-        u_short th_sum;                 /* checksum */
-        u_short th_urp;                 /* urgent pointer */
-};
 
 int main(){
 
@@ -86,15 +65,25 @@ sin.sin_family = AF_INET;
 
 //Here you can construct the IP packet using buffer[]
 
-//TODO
+
+    
 struct ip_header* ip = (struct ip_header*)buffer;
 
-struct tcp_header* tcp = (struct tcp_header*)buffer + sizeof(ip);
+struct icmp* icmp = (struct icmp*)buffer + sizeof(ip);
 
 ip->ip_len = 420;
-ip->ip_p = "tcp";
-tcp->th_sport = 80;
-tcp->th_dport = 80;
+ip->ip_p = IPPROTO_ICMP;
+
+icmp->icmp_type = ICMP_ECHO;
+icmp->icmp_code = 0;
+icmp->icmp_id = 123;
+icmp->icmp_seq = 0;
+
+char* source_string = "10.0.2.5";
+char* dest_string = "10.0.2.4";
+//set source and destination ip
+ip->ip_src = inet_addr(source_string);
+ip->ip_dst = inet_addr(dest_string);
 
 
 //fill in the data part if needed

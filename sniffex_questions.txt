@@ -1,0 +1,34 @@
+Austin Peterson
+UIN: 926006358
+
+
+PACKET SNIFFER QUESTIONS:
+1. Use your own words to describe the sequence of library calls that are essential to sniffer programs 
+	-The first essential step is establishing the device that is to be used to sniff, which can be found by either manually entering the device name or by using the call pcap_lookup(char* errbuff). The next step is to initialize the sniffing session using the call pcap_openlive(...), which takes arguments for the sniff device, length, promiscuity, timeout and error buffer. Next, if you dont want to sniff every packet on the network, you have to create a filter using pcap_compile(...) which creates a compiled bpf_program filter based on a string for the filter expression, and pcap_setfilter() which simply enforces the filter. After that, you can use functions like pcap_next, pcap_loop and pcap_dispatch to process each packet, which can can be done using callback functions.
+
+2. Why do you need the root privilege to run sniffex? Where does the program fail if executed without the root privilege?
+	-you need root privileges to run sniffex because you're using the raw sockets to intercept traffic. If you dont have root privilege then you fail when you try to call the pcap_openlive command to start the sniffing session.
+
+3. Turn on and off promiscuous mode. Can you demonstrate the difference? Please describe.
+	-Promiscuous mode will determine whether you capture packets just going to your device (prom=0) or if you sniff all traffic on the network (prom=1). With promiscuous mode enabled, the packet sniffer picks up packets that are being send not only to the vm hosting the sniffer but also any other machines (vms in this case) that are connected to the network.
+
+4. Please write filter expressions to capture each of the followings. In your lab reports, you need to include screendumps to show the results of applying each of these filters.
+	-ICMP filter expression: char* filter_exp[]= "((icmp) and ((dst host 10.0.2.5) and (src host 10.0.2.4)) or ((dst host 10.0.2.4) and (src host 10.0.2.5)))"; 
+	-TCP port filter expression: char* filter_exp[] = "(dst portrange 10-100)";
+	
+5. Show how you can use sniffex to capture passwords when somebody is using telnet on the network that you are monitoring.
+	-Since telnet has a reserved port, port 23, you can easily monitor traffic on that port specifically using a filter. The paylod can be translated from hex to ascii to reveal the possword "dees".
+		
+	
+	
+PACKET SPOOFING QUESTIONS:
+1. Can you set the IP packet length field to an arbitrary value, regardless of how big the actual packet is?
+	-It appears so. Spoofed test packets that were intercepted consistently showed a size of 1038, regardless of whether the ip header length was set to 500, 1024 or 5000.
+	
+2. Using the raw socket programming, do you have to calculate the checksum for the IP header?
+	-While the checksum does have to be calculated in order to determine if a packet has reached its destination intact, this task is usually carried out by the operating system.
+	
+3. Why do you need the root privilege to run the programs that use raw sockets? Where does the program fail if executed without the root privilege?
+	-Raw sockets require root access to create and allocate sockets for use by user programs. Without root access, the program fails when calling the socket() function to create and allocate a socket to send the spoofed packets.
+
+
