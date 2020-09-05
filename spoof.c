@@ -5,8 +5,6 @@ UIN: 926006358
 */
 
 
-
-
 #include <pcap.h>
 #include <stdio.h>
 #include <string.h>
@@ -82,8 +80,8 @@ icmp->icmp_seq = 0;
 char* source_string = "10.0.2.5";
 char* dest_string = "10.0.2.4";
 //set source and destination ip
-ip->ip_src = inet_addr(source_string);
-ip->ip_dst = inet_addr(dest_string);
+ip->ip_src = inet_aton(source_string);
+ip->ip_dst = inet_aton(dest_string);
 
 
 //fill in the data part if needed
