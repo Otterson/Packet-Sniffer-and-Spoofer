@@ -26,7 +26,7 @@ PACKET SPOOFING QUESTIONS:
 	-It appears so. Spoofed test packets that were intercepted consistently showed a size of 1038, regardless of whether the ip header length was set to 500, 1024 or 5000.
 	
 2. Using the raw socket programming, do you have to calculate the checksum for the IP header?
-	-While the checksum does have to be calculated in order to determine if a packet has reached its destination intact, this task is usually carried out by the operating system.
+	-Yes. Since we are building the packet ourselves we have to manually calculate the checksum or the packet will not register as complete upon arrival.
 	
 3. Why do you need the root privilege to run the programs that use raw sockets? Where does the program fail if executed without the root privilege?
 	-Raw sockets require root access to create and allocate sockets for use by user programs. Without root access, the program fails when calling the socket() function to create and allocate a socket to send the spoofed packets.
