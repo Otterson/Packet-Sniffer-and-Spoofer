@@ -59,7 +59,7 @@ struct icmphdr* buildICMPHeader(){
         icmp->code = 0;
         icmp->checksum = 0;
 
-       // icmp->checksum = in_cksum(icmp, sizeof(struct icmphdr));
+        icmp->checksum = in_cksum(icmp, sizeof(struct icmphdr));
 
         return icmp;
 } 

@@ -37,21 +37,8 @@ u_short checkSum(char *addr, int len);
 //         u_short ether_type;                     /* IP? ARP? RARP? etc */
 // }
 
-//IP Header
-// struct ip_header {
-//  unsigned char      iph_ihl:5, iph_ver:4;
-//  unsigned char      iph_tos;
-//  unsigned short int iph_len;
-//  unsigned short int iph_id;
-//  unsigned char      iph_flag;
-//  unsigned short int iph_offset;
-//  unsigned char      iph_ttl;
-//  unsigned char      iph_protocol;
-//  unsigned short int iph_chksum;
-//  unsigned int       iph_sourceip;
-//  unsigned int       iph_destip;
-// };
-// struct ip {
+
+// struct ip { from netinet/ip.h
 // #if BYTE_ORDER == LITTLE_ENDIAN 
 //     u_char  ip_hl:4,        /* header length */
 //             ip_v:4;         /* version */
@@ -73,7 +60,7 @@ u_short checkSum(char *addr, int len);
 // };
 
 
-// struct eth_header* buildEthernetHeader(char* source_mac, char* dest_mac){
+// struct eth_header* buildEthernetHeader(char* source_mac, char* dest_mac){ //didnt get used in the end
 //         struct eth_header* eth;
 //         eth = (struct eth_header*)malloc(SIZE_ETHERNET);
 
@@ -112,8 +99,7 @@ struct icmphdr* buildICMPHeader(){
 
         icmp->checksum = checkSum((char *)&icmp, 2);
   printf("chksum: %x\n",checkSum((char *)&icmp, sizeof(icmp)));
-  //icmp->checksum = htons(0x8336);
-        //icmp->checksum = in_cksum((unsigned short*)icmp, sizeof(struct icmphdr));
+
         return icmp;
 } 
 
