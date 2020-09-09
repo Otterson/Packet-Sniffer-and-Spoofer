@@ -26,14 +26,17 @@ UIN: 926006358
 /* Ethernet addresses are 6 bytes */
 #define ETHER_ADDR_LEN  6
 
+#define BUFFER_SIZE 84
+
 u_short checkSum(char *addr, int len);
 
 //Ethernet Header
-struct eth_header {
-        u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
-        u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
-        u_short ether_type;                     /* IP? ARP? RARP? etc */
-};
+// struct eth_header {
+//         u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
+//         u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
+//         u_short ether_type;                     /* IP? ARP? RARP? etc */
+// }
+
 //IP Header
 // struct ip_header {
 //  unsigned char      iph_ihl:5, iph_ver:4;
@@ -69,67 +72,54 @@ struct eth_header {
 //     struct  in_addr ip_src,ip_dst;  /* source and dest address */
 // };
 
-#define BUFFER_SIZE 1024
 
+// struct eth_header* buildEthernetHeader(char* source_mac, char* dest_mac){
+//         struct eth_header* eth;
+//         eth = (struct eth_header*)malloc(SIZE_ETHERNET);
 
-struct eth_header* buildEthernetHeader(char* source_mac, char* dest_mac){
-        struct eth_header* eth;
-        eth = (struct eth_header*)malloc(SIZE_ETHERNET);
+//         strcpy(eth->ether_shost, source_mac);
+//         strcpy(eth->ether_dhost, dest_mac);
+//         eth->ether_type = 'IP';        //pretty sure
 
-        
-        strcpy(eth->ether_shost, source_mac);
-        strcpy(eth->ether_dhost, dest_mac);
-        eth->ether_type = 'ARP';        //pretty sure
-
-        return eth;
-}
+//         return eth;
+// }
 
 struct ip* buildIPHeader(char* source_addr, char* dest_addr){
         struct ip* ipHeader;
         int size = sizeof(struct icmphdr) + sizeof(struct ip)+1;
 
-        ipHeader = (struct ip_header*)malloc(sizeof(struct ip));
-        // ip->ip_vhl = 4;
-        // ip->ip_tos=0;                 /* type of service */
-        // ip->ip_len = sizeof(struct ip_header);                /* total length */
-        // ip->ip_id = rand();                 /* identification */
-        // ip->ip_off = 0;                  fragment offset field 
-        // ip->ip_ttl = rand();                /* time to live */
-        // ip->ip_p = IPPROTO_ICMP;                 /* protocol */
-        // inet_aton(source_addr, &ip->ip_src);
-        // inet_aton(dest_addr, &ip->ip_dst);
-        // ip->version = 4;
+        ipHeader = (struct ip*)malloc(sizeof(struct ip));
         ipHeader->ip_tos = 0;
+        ipHeader->ip_v = 4;
+        ipHeader->ip_hl = (sizeof(struct ip))/4;
         ipHeader->ip_len = htons(size);
         ipHeader->ip_id = rand();
         ipHeader->ip_off = 0;
         ipHeader->ip_ttl = 64;
         ipHeader->ip_p = IPPROTO_ICMP;
-        // ipHeader->ip_src = inet_addr(source_addr);
-        // ipHeader->ip_dst = inet_addr(dest_addr);
         inet_aton(source_addr, &ipHeader->ip_src);
         inet_aton(dest_addr, &ipHeader->ip_dst);
         ipHeader->ip_sum = checkSum((char*) ipHeader, ipHeader->ip_len);
-
+        //printf("IP header sizeof: %s\n", ipHeader->ip_hl);
         return ipHeader;
 }
 
-
-struct icmp_header* buildICMPHeader(){
-        struct icmphdr* icmp;
-
-        icmp = (struct icmphdr*)malloc(sizeof(struct icmphdr));
-
+struct icmphdr* buildICMPHeader(){ 
+        struct icmphdr* icmp = (struct icmphdr*)malloc(sizeof(struct icmphdr));
         icmp->type = ICMP_ECHO;
+        icmp->code = 0;
+        icmp->checksum = 0;
 
-
+        icmp->checksum = checkSum((char *)&icmp, 2);
+  printf("chksum: %x\n",checkSum((char *)&icmp, sizeof(icmp)));
+  //icmp->checksum = htons(0x8336);
+        //icmp->checksum = in_cksum((unsigned short*)icmp, sizeof(struct icmphdr));
         return icmp;
 } 
 
-//function I found online to calculate checksum
+
 u_short checkSum(char *addr, int len){
       long sum = 0;  /* assume 32 bit long, 16 bit short */
-
        while(len > 1){
          int temp = *((unsigned short*)addr);
          sum += temp++;
@@ -154,56 +144,45 @@ struct sockaddr_in sin;
 char buffer[BUFFER_SIZE]; //You can change the buffer size
 const int on =1;
 
-/*Create a raw socket with IP protocol. The IPProto_Raw parameter tells the system that the IP header is already included. This prevents the OS from adding another IP header */
-sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-if(sd<0){
-	perror("socket() error");
-	exit(-1);
-}
-
-/* this data structure is needed when sending the packets using sockets. Normally, we need to fill out several fields, but for raw sockets we only need to fill out this one field */
-
-sin.sin_family = AF_INET;
-
-//Here you can construct the IP packet using buffer[]
-char* source_mac = "08:00:27:41:75:67"; 
-char* dest_mac = "08:00:27:15:d5:0b"; 
-char* source_string = "10.0.2.5";
+char* source_string = "4.4.4.4";    //spoof source address
 char* dest_string = "10.0.2.4";
 
+//struct eth_header* eth_hdr = buildEthernetHeader(source_mac, dest_mac); //didnt get used
+struct ip* ip_hdr = buildIPHeader(source_string, dest_string);      //build IP header
+struct icmphdr* icmp_hdr = buildICMPHeader();                       //build icmp header
 
-
-
-
-struct eth_header* eth_hdr = buildEthernetHeader(source_mac, dest_mac);
-struct ip* ip_hdr = buildIPHeader(source_string, dest_string);
-struct icmphdr* icmp_hdr = buildICMPHeader();
+printf("IP header size: %d\n", sizeof(struct ip));
+printf("ICMP header size: %d\n", sizeof(struct icmphdr));
 
 // memcpy(buffer, eth_hdr, SIZE_ETHERNET);
-// memcpy(buffer + SIZE_ETHERNET, ip_hdr, sizeof(struct ip_header));
-// memcpy(buffer+SIZE_ETHERNET+sizeof(struct ip_header), icmp_hdr, sizeof(struct icmphdr));
+// memcpy(buffer + SIZE_ETHERNET, ip_hdr, sizeof(struct ip));
+// memcpy(buffer+SIZE_ETHERNET+sizeof(struct ip), icmp_hdr, sizeof(struct icmphdr));
 
-memcpy(buffer, ip_hdr, sizeof(struct ip));
-memcpy(buffer + sizeof(struct ip), icmp_hdr, sizeof(struct icmphdr));
+memcpy(buffer, ip_hdr, sizeof(struct ip)+1);                //copy headers into packet buffer
+memcpy(buffer + sizeof(struct ip), icmp_hdr, sizeof(struct icmphdr));   
 
+
+sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);    //create socket
+if(sd<0){
+    perror("socket() error");
+    exit(-1);
+}
+sin.sin_family = AF_INET;
+sin.sin_addr.s_addr = ip_hdr->ip_dst.s_addr;                    //set socket source addr
+
+bind(sd, (struct sockaddr*)&sin, sizeof(sin));                 
 if (setsockopt(sd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
     perror("setsockopt");
     exit(1);
   }
-//fill in the data part if needed
-
-//Note: you shoudl pat attention to the network/host byte order
-
-/*send out the ip packet. ip_len is thee actual size of the packet */
 
 if(sendto(sd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&sin,sizeof(sin))<0){
-	perror("sendto() error");
+	perror("sendto() error");                              //send packet
 	exit(-1);
 }
 else{
-        printf("Packet Sent");
+        printf("Packet Sent\n");
 }
-
 return 0;
 }
 

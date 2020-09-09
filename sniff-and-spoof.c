@@ -11,8 +11,6 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 
-using namespace std;
-
 /*
 In this task, you will combine the sniffing and spoofing techniques to implement the following
 sniff-and- then-spoof program. You need two VMs on the same LAN. From VM A, you ​ ping ​ anIP X. This will
@@ -26,18 +24,59 @@ ping ​ program will always receive a reply, indicating that X is alive. You ne
 program, and include screendumps in your report to show that your program works. Please also
 attach the code (with adequate amount of comments) in your report./*
 */
+#define SIZE_ETHERNET 14
+
+#define SNAP_LEN 1518
+/* Ethernet addresses are 6 bytes */
+#define ETHER_ADDR_LEN  6
+
+#define BUFFER_SIZE 100
+
+
+struct ip* buildIPHeader(char* source_addr, char* dest_addr){
+        struct ip* ipHeader;
+        int size = sizeof(struct icmphdr) + sizeof(struct ip)+1;
+
+        ipHeader = (struct ip*)malloc(sizeof(struct ip));
+        ipHeader->ip_tos = 0;
+        ipHeader->ip_v = 4;
+        ipHeader->ip_hl = (sizeof(struct ip))/4;
+        ipHeader->ip_len = htons(size);
+        ipHeader->ip_id = rand();
+        ipHeader->ip_off = 0;
+        ipHeader->ip_ttl = 64;
+        ipHeader->ip_p = IPPROTO_ICMP;
+        inet_aton(source_addr, &ipHeader->ip_src);
+        inet_aton(dest_addr, &ipHeader->ip_dst);
+        //ipHeader->ip_sum = checkSum((char*) ipHeader, ipHeader->ip_len);
+
+        return ipHeader;
+}
+
+struct icmphdr* buildICMPHeader(){
+        struct icmphdr* icmp = (struct icmphdr*)malloc(sizeof(struct icmphdr));
+        icmp->type = ICMP_ECHOREPLY;
+        icmp->code = 0;
+        icmp->checksum = 0;
+
+       // icmp->checksum = in_cksum(icmp, sizeof(struct icmphdr));
+
+        return icmp;
+} 
+
 void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
-    const struct sniff_ip *ip; /* The IP header */
+    const struct ip *ip; /* The IP header */
 
     int size_ip;
 
     printf("ICMP Packet Received\n");
-    count++;
+    const int on =1;
+
 
     /* define/compute ip header offset */
-    ip = (struct sniff_ip *)(packet + SIZE_ETHERNET);
-    size_ip = IP_HL(ip) * 4;
+    ip = (struct ip *)(packet + SIZE_ETHERNET);
+    size_ip = ip->ip_hl * 4;
     if (size_ip < 20)
     {
         printf("   * Invalid IP header length: %u bytes\n", size_ip);
@@ -51,7 +90,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
     //Create and send spoof packet
     int sd;
     struct sockaddr_in sin;
-    char buffer[1024];
+    char buffer[100];
 
     sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (sd < 0)
@@ -62,23 +101,26 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 
     sin.sin_family = AF_INET;
 
-    struct ip_header *ip_header = (struct ip_header *)buffer;
+    struct ip* ipHeader = buildIPHeader(inet_ntoa(ip->ip_dst), inet_ntoa(ip->ip_src));
+    ipHeader->ip_dst = ip->ip_src;
+    struct icmphdr* icmpHeader = buildICMPHeader();
 
-    struct icmp *icmp = (struct icmp *)buffer + sizeof(ip);
-
-    ip_header->ip_len = 420;
-    ip_header->ip_p = IPPROTO_ICMP;
-
-    char *source_string[];
-    char *dest_string = "";
-
-    
-    //set source and destination ip
-    ip_header->ip_src = ip->dst;
-    ip_header->ip_dst = ip->src;
+    memcpy(buffer, ipHeader, sizeof(struct ip));
+    memcpy(buffer+sizeof(struct ip), icmpHeader, sizeof(struct icmphdr));
 
     size_t packet_len = sizeof(buffer);
+
+    sin.sin_addr.s_addr = ip->ip_dst.s_addr;
+
+if (setsockopt(sd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+    perror("setsockopt");
+    exit(1);
+  }
+
     printf("Sending Spoofed Response Packet\n");
+    printf("       From: %s\n", inet_ntoa(ipHeader->ip_src));
+    printf("         To: %s\n\n", inet_ntoa(ipHeader->ip_dst));
+
     if (sendto(sd, buffer, packet_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
         perror("sendto() error");
@@ -93,14 +135,15 @@ int main()
     char *dev = NULL;              /* capture device name */
     char errbuf[PCAP_ERRBUF_SIZE]; /* error buffer */
     pcap_t *handle;                /* packet capture handle */
+    const int on =1;
 
-    char filter_exp[] = "icmp"; /* filter expression [3] */
+    char filter_exp[] = "icmp and (src host 10.0.2.4)"; /* filter expression [3] */
     struct bpf_program fp;      /* compiled filter program (expression) */
     bpf_u_int32 mask;           /* subnet mask */
     bpf_u_int32 net;            /* ip */
     int num_packets = 10;       /* number of packets to capture */
 
-    print_app_banner();
+    //print_app_banner();
 
     /* check for capture device name on command-line */
     dev = pcap_lookupdev(errbuf);
